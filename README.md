@@ -2,6 +2,9 @@
   <a href="https://openproceedings.org/2026/conf/edbt/paper-334.pdf">
     <img src="https://img.shields.io/badge/paper-EDBT%202026-1f77b4.svg" alt="Paper">
   </a>
+  <a href="[YOUR_VIDEO_URL_HERE](https://drive.google.com/drive/u/1/folders/1td81GGrWWoMvRuQkhSs_ayDxWE7VNjmu)">
+    <img src="https://img.shields.io/badge/video-demo-b56576.svg" alt="Video Demo">
+  </a>
   <a href="https://github.com/VasilikiPapanikou/MIMOSA/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-4c956c.svg" alt="License">
   </a>
