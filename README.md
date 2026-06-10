@@ -1,11 +1,11 @@
 <p align="center">
   <a href="https://openproceedings.org/2026/conf/edbt/paper-334.pdf">
-    <img src="https://img.shields.io/badge/paper-EDBT%202026-blue.svg" alt="Paper">
+    <img src="https://img.shields.io/badge/paper-EDBT%202026-1f77b4.svg" alt="Paper">
   </a>
   <a href="https://github.com/VasilikiPapanikou/MIMOSA/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+    <img src="https://img.shields.io/badge/license-MIT-4c956c.svg" alt="License">
   </a>
-  <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/python-3.8+-f2c94c.svg" alt="Python">
 </p>
 
 <p align="center">
@@ -31,7 +31,7 @@ The **MIMOSA**<sup>*</sup> tool utilizes both individual and group explanation m
 
 ---
 
-## Installation & Usage
+## 🚀 Installation & Usage
 
 ### Prerequisites
 - Python 3.8+
@@ -44,18 +44,21 @@ pip install -r requirements.txt
 ### Run the app
 ```bash
 streamlit run app.py
+```
 
 ---
+
 ## Citing
 
 If you use MIMOSA in your research, please cite:
 
 ```bibtex
-@article{papanikou2026mimosa,
-  title={MIMOSA: A Tool for Fairness Exploration Through Explanations},
-  author={Papanikou, Vasiliki and Karidi, Danae Pla and Pitoura, Evaggelia and Panagiotou, Emmanouil and Ntoutsi, Eirini},
-  year={2026}
+@inproceedings{papanikou2026mimosa,
+  title     = {MIMOSA: A Tool for Fairness Exploration Through Explanations},
+  author    = {Papanikou, Vasiliki and Pla Karidi, Danae and Pitoura, Evaggelia and Panagiotou, Emmanouil and Ntoutsi, Eirini},
+  booktitle = {Proceedings of the 29th International Conference on Extending Database Technology (EDBT)},
+  year      = {2026}
 }
 ```
 
-<sup>*</sup> *The mimosa flower symbolizes purity, innocence and sensitivity...*
+<sup>*</sup> *The mimosa flower symbolizes purity, innocence and sensitivity, values that are essential in the pursuit of truth, justice and fairness.*
