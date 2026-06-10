@@ -2,24 +2,11 @@
   <img src="demo/media/logo.png" width="200">
 </p>
 
-As Artificial Intelligence (AI) is increasingly used in areas that impact human lives, concerns about fairness and transparency have grown, especially for protected groups. To better understand such concerns, explainability techniques can be leveraged not only for model interpretation but also to assess potential biases. 
-The **MIMOSA**<sup>*</sup> tool utilizes both individual and group explanation methods as bias detectors. It allows users to compare group fairness metrics with explanation findings, identify which features contribute to biased outcomes, visualize explanations through multiple perspectives and apply fairness interventions while tracking how feature contributions change. The tool is designed to be accessible to a wide audience of users, including sociologists, domain experts and machine learning practitioners.
-
----
-
-<sup>*</sup> *The mimosa flower symbolizes purity, innocence and sensitivity, values that are essential in the pursuit of truth, justice and fairness.*
-
-
-
 <p align="center">
-  <img src="demo/media/logo.png" width="200">
+  <em>A Tool for Fairness Exploration Through Explanations</em>
 </p>
 
-<h1 align="center">MIMOSA</h1>
-
-<p align="center">
-  <em>Fairness-Aware Explainability for Machine Learning</em>
-</p>
+[First Last](https://link), [First Last](https://link), [First Last](https://link)
 
 <p align="center">
   <a href="https://arxiv.org/abs/XXXX.XXXXX">
@@ -36,29 +23,21 @@ The **MIMOSA**<sup>*</sup> tool utilizes both individual and group explanation m
 
 ---
 
-As Artificial Intelligence (AI) is increasingly used in areas that impact human lives, ...
-[your existing description]
+As Artificial Intelligence (AI) is increasingly used in areas that impact human lives, concerns about fairness and transparency have grown, especially for protected groups. To better understand such concerns, explainability techniques can be leveraged not only for model interpretation but also to assess potential biases. 
+The **MIMOSA**<sup>*</sup> tool utilizes both individual and group explanation methods as bias detectors. It allows users to compare group fairness metrics with explanation findings, identify which features contribute to biased outcomes, visualize explanations through multiple perspectives and apply fairness interventions while tracking how feature contributions change. The tool is designed to be accessible to a wide audience of users, including sociologists, domain experts and machine learning practitioners.
 
 ---
 
-## 📄 Paper & Citation
+## Citing
 
 If you use MIMOSA in your research, please cite:
 
 ```bibtex
-@inproceedings{yourname2024mimosa,
-  title     = {MIMOSA: ...},
-  author    = {Last, First and Last, First},
-  booktitle = {Proceedings of ...},
-  year      = {2024}
+@article{papanikou2026mimosa,
+  title={MIMOSA: A Tool for Fairness Exploration Through Explanations},
+  author={Papanikou, Vasiliki and Karidi, Danae Pla and Pitoura, Evaggelia and Panagiotou, Emmanouil and Ntoutsi, Eirini},
+  year={2026}
 }
 ```
-
-## 👥 Authors
-
-- **First Last** — [University](https://yoursite.com) · [@github](https://github.com/handle)
-- **First Last** — [University](https://yoursite.com)
-
----
 
 <sup>*</sup> *The mimosa flower symbolizes purity, innocence and sensitivity...*
