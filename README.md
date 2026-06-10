@@ -31,7 +31,7 @@ The **MIMOSA**<sup>*</sup> tool utilizes both individual and group explanation m
 
 ---
 
-## 🚀 Installation & Usage
+## Installation & Usage
 
 ### Prerequisites
 - Python 3.8+
