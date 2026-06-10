@@ -6,7 +6,13 @@
   <em>A Tool for Fairness Exploration Through Explanations</em>
 </p>
 
-[First Last](https://link), [First Last](https://link), [First Last](https://link)
+<p align="center">
+  <a href="https://orcid.org/0009-0004-0785-4727">Vasiliki Papanikou</a> &nbsp;·&nbsp;
+  <a href="https://orcid.org/0000-0002-3154-6212">Danae Pla Karidi</a> &nbsp;·&nbsp;
+  <a href="https://orcid.org/0000-0002-3775-4995">Evaggelia Pitoura</a> &nbsp;·&nbsp;
+  <a href="https://orcid.org/0000-0001-9134-9387">Emmanouil Panagiotou</a> &nbsp;·&nbsp;
+  <a href="https://orcid.org/0000-0001-5729-1003">Eirini Ntoutsi</a>
+</p>
 
 <p align="center">
   <a href="https://arxiv.org/abs/XXXX.XXXXX">
