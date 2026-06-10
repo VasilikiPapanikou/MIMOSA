@@ -45,6 +45,7 @@ pip install -r requirements.txt
 ```bash
 streamlit run app.py
 
+---
 ## Citing
 
 If you use MIMOSA in your research, please cite:
