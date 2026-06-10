@@ -1,4 +1,14 @@
 <p align="center">
+  <a href="https://openproceedings.org/2026/conf/edbt/paper-334.pdf">
+    <img src="https://img.shields.io/badge/paper-EDBT%202026-blue.svg" alt="Paper">
+  </a>
+  <a href="https://github.com/VasilikiPapanikou/MIMOSA/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+  </a>
+  <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python">
+</p>
+
+<p align="center">
   <img src="demo/media/logo.png" width="200">
 </p>
 
@@ -12,16 +22,6 @@
   <a href="https://orcid.org/0000-0002-3775-4995">Evaggelia Pitoura</a> &nbsp;·&nbsp;
   <a href="https://orcid.org/0000-0001-9134-9387">Emmanouil Panagiotou</a> &nbsp;·&nbsp;
   <a href="https://orcid.org/0000-0001-5729-1003">Eirini Ntoutsi</a>
-</p>
-
-<p align="center">
-  <a href="https://openproceedings.org/2026/conf/edbt/paper-334.pdf">
-    <img src="https://img.shields.io/badge/paper-EDBT%202026-blue.svg" alt="Paper">
-  </a>
-  <a href="https://github.com/VasilikiPapanikou/MIMOSA/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-  </a>
-  <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python">
 </p>
 
 ---
