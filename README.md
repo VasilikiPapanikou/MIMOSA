@@ -41,9 +41,7 @@ The **MIMOSA**<sup>*</sup> tool utilizes both individual and group explanation m
 -  **Visual explanations** — explore feature contributions through plots such as heatmaps, violin plots and summary visualizations.
 -  **Fairness interventions** — apply mitigation strategies and compare explanations before and after intervention.
 
-
-## Example 
-Visualizations
+## Example Visualizations
 
 <p align="center">
   <img src="demo/media/fairness.png" width="700" alt="Fairness metrics example">
@@ -52,8 +50,6 @@ Visualizations
 <p align="center">
   <em>Comparison of fairness metrics across protected groups.</em>
 </p>
-
-## 📸 Example Visualizations
 
 <table>
   <tr>
@@ -92,18 +88,6 @@ Visualizations
     Example explanation visualizations produced by MIMOSA: violin, mean contribution,
     mean absolute contribution, heatmap and beeswarm plots.
   </em>
-</p>
-
-<p align="center">
-  <em>Visualization of feature contributions using explanation methods.</em>
-</p>
-
-<p align="center">
-  <img src="demo/media/example_intervention.png" width="700" alt="Fairness intervention example">
-</p>
-
-<p align="center">
-  <em>Before and after comparison of fairness intervention results.</em>
 </p>
 
 ## Installation & Usage
