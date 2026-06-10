@@ -15,14 +15,11 @@
 </p>
 
 <p align="center">
-  <a href="https://arxiv.org/abs/XXXX.XXXXX">
-    <img src="https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg" alt="arXiv">
+  <a href="https://openproceedings.org/2026/conf/edbt/paper-334.pdf">
+    <img src="https://img.shields.io/badge/paper-EDBT%202026-blue.svg" alt="Paper">
   </a>
-  <a href="https://github.com/YOUR_ORG/mimosa/blob/main/LICENSE">
+  <a href="https://github.com/VasilikiPapanikou/MIMOSA/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-  </a>
-  <a href="https://pypi.org/project/mimosa/">
-    <img src="https://img.shields.io/pypi/v/mimosa.svg" alt="PyPI">
   </a>
   <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python">
 </p>
@@ -33,6 +30,20 @@ As Artificial Intelligence (AI) is increasingly used in areas that impact human 
 The **MIMOSA**<sup>*</sup> tool utilizes both individual and group explanation methods as bias detectors. It allows users to compare group fairness metrics with explanation findings, identify which features contribute to biased outcomes, visualize explanations through multiple perspectives and apply fairness interventions while tracking how feature contributions change. The tool is designed to be accessible to a wide audience of users, including sociologists, domain experts and machine learning practitioners.
 
 ---
+
+## Installation & Usage
+
+### Prerequisites
+- Python 3.8+
+
+### Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### Run the app
+```bash
+streamlit run app.py
 
 ## Citing
 
