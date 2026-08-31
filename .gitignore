@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.env
+.ipynb_checkpoints/
+.vscode/
+*.pkl
+*.pt
+*.zip
+*.csv
+
+.venv/
+demo/saved_explanations/
+saved_models/
+*.joblib
+~$*
