@@ -67,7 +67,7 @@ class Explainer:
                 outcome_name=target_name
             )            
             m = dice_ml.Model(model=model, backend="sklearn")
-            self.dice_explainer = dice_ml.Dice(d, m, method="genetic")
+            self.dice_explainer = dice_ml.Dice(d, m, method="random")
 
     def _load_saved_explanations(self, save_path, data_subset):
         """Load only explanations that correspond exactly to the current rows."""
@@ -270,9 +270,18 @@ class Explainer:
 
         return explanations_list
 
-    def generate_dice_explanations_for_group(self, data_subset, model, save_path=None, total_CFs=1, desired_class="opposite", features_to_vary = None):        
+    def generate_dice_explanations_for_group(
+        self,
+        data_subset,
+        model,
+        save_path=None,
+        total_CFs=1,
+        desired_class="opposite",
+        features_to_vary=None,
+        sample_size=500,
+    ):        
         """
-        Generates DiCE explanations for an entire group at once for efficiency.
+        Generates DiCE explanations for a group.
         
         Args:
             data_subset (pd.DataFrame): The data (original features + target) to explain.
@@ -298,57 +307,56 @@ class Explainer:
         query_instances = data_subset_df[self.feature_names] 
 
         
-        st.write(f"Calculating DiCE Counterfactuals for {len(query_instances)} instances at once...")
+        total = len(query_instances)
+        st.write(f"Calculating DiCE counterfactuals for {total} instances...")
+        progress_bar = st.progress(0, text="Calculating DiCE counterfactuals... (0%)")
+        explanations_list = []
+        failed_count = 0
         
-        try:
-            if features_to_vary:
-                dice_exp = self.dice_explainer.generate_counterfactuals(
-                    query_instances, 
-                    total_CFs=total_CFs, 
-                    desired_class=desired_class,
-                    diversity_weight=0, 
-                    features_to_vary=features_to_vary
-                )
-            else:
-                dice_exp = self.dice_explainer.generate_counterfactuals(
-                    query_instances, 
-                    total_CFs=total_CFs, 
-                    desired_class=desired_class,
-                    diversity_weight=0 
-                )
-            
+        for i in tqdm(range(total), desc="Generating DiCE counterfactuals"):
+            original_index = data_subset_df.index[i]
+            query_instance = query_instances.iloc[[i]]
+            cfs_data = []
 
-            explanations_list = []
-            
-            cf_examples_list = dice_exp.cf_examples_list
-            
-            total = len(cf_examples_list) 
-            
-            for i in range(total):
-                cfe = cf_examples_list[i]
-                
-                
-                original_index = data_subset_df.index[i]
-                
+            try:
+                dice_kwargs = {
+                    "total_CFs": total_CFs,
+                    "desired_class": desired_class,
+                    "diversity_weight": 0,
+                    "sample_size": sample_size,
+                    "random_seed": 42,
+                }
+                if features_to_vary:
+                    dice_kwargs["features_to_vary"] = features_to_vary
+
+                dice_exp = self.dice_explainer.generate_counterfactuals(
+                    query_instance,
+                    **dice_kwargs
+                )
+
+                cfe = dice_exp.cf_examples_list[0] if dice_exp.cf_examples_list else None
                 if cfe and cfe.final_cfs_df is not None:
                     cfs_data = cfe.final_cfs_df.to_dict(orient="records")
-                else:
-                    cfs_data = []
+            except Exception:
+                failed_count += 1
 
-               
-                exp_dict = {
-                    "instance_id": int(original_index),
-                    "cfs": cfs_data 
-                }
-                explanations_list.append(exp_dict)
-                
-                
-                if i == 0:
-                    st.empty() 
+            explanations_list.append({
+                "instance_id": int(original_index),
+                "cfs": cfs_data
+            })
+            
+            percent_complete = (i + 1) / total
+            progress_bar.progress(
+                percent_complete,
+                text=f"Calculating DiCE counterfactuals... ({int(percent_complete * 100)}%)"
+            )
 
-        except Exception as e:
-            st.error(f"Failed to generate batch DiCE counterfactuals: {e}")
-            return []
+        progress_bar.empty()
+        if failed_count:
+            st.warning(
+                f"DiCE did not find counterfactuals for {failed_count} of {total} instances. "
+                "Those instances were skipped in DiCE feature-change summaries."
+            )
 
 
         
@@ -448,6 +456,17 @@ class Explainer:
         return pd.DataFrame(change_percent).fillna(0)
     
     def extract_feature_name(self, feature_text):
+        feature_text = str(feature_text).strip()
+        # Prefer the actual feature vocabulary so names such as Credit-Amount
+        # and multi-word categorical features remain intact.
+        for feature_name in sorted(self.feature_names, key=len, reverse=True):
+            suffix = feature_text[len(feature_name):len(feature_name) + 1]
+            if feature_text == feature_name or (
+                feature_text.startswith(feature_name)
+                and suffix in {" ", "=", "<", ">"}
+            ):
+                return feature_name
+
         match = re.search(r'[A-Za-z_][A-Za-z0-9_\s]*', feature_text)
         if match:
             return match.group(0).strip()  
@@ -729,6 +748,131 @@ class Explainer:
         )
 
         return feature_importance.head(top_n).index.tolist()
+
+    @staticmethod
+    def _prediction_probabilities(predict_fn, data):
+        """Return a 2-D class-probability array for a model or prediction wrapper."""
+        # Some model wrappers add a temporary target column; isolate that mutation.
+        model_input = data.copy() if hasattr(data, "copy") else data
+        probabilities = predict_fn(model_input) if callable(predict_fn) else predict_fn.predict_proba(model_input)
+        probabilities = np.asarray(probabilities)
+        if probabilities.ndim == 1:
+            probabilities = np.column_stack([1 - probabilities, probabilities])
+        if probabilities.ndim != 2 or probabilities.shape[1] < 2:
+            raise ValueError("AOPC requires binary class probabilities.")
+        return probabilities
+
+    @staticmethod
+    def _feature_baselines(reference_data, feature_names, categorical_features=None):
+        """Build valid replacement values for numeric and categorical columns."""
+        categorical_features = set(categorical_features or [])
+        baselines = {}
+        for feature in feature_names:
+            if feature not in reference_data.columns:
+                continue
+            series = reference_data[feature].dropna()
+            if series.empty:
+                continue
+            if feature in categorical_features:
+                baselines[feature] = series.mode().iloc[0]
+            else:
+                baselines[feature] = series.median()
+        return baselines
+
+    def compute_aopc_global(
+        self,
+        predict_fn,
+        X,
+        feature_ranking,
+        K,
+        reference_data=None,
+        categorical_features=None,
+    ):
+        """Compute the global confidence-drop AOPC used to compare rankings."""
+        if X is None or len(X) == 0:
+            return np.nan
+
+        X = X.copy()
+        valid_ranking = [feature for feature in feature_ranking if feature in X.columns]
+        K = min(max(int(K), 0), len(valid_ranking))
+        if K == 0:
+            return 0.0
+
+        reference_data = reference_data if reference_data is not None else X
+        baselines = self._feature_baselines(
+            reference_data, X.columns, categorical_features
+        )
+        original_probs = self._prediction_probabilities(predict_fn, X)
+        predicted_classes = original_probs.argmax(axis=1)
+        original_class_probs = original_probs[
+            np.arange(len(X)), predicted_classes
+        ]
+
+        cumulative_diffs = np.zeros(len(X), dtype=float)
+        for k in range(K + 1):
+            X_modified = X.copy()
+            for feature in valid_ranking[:k]:
+                if feature in baselines:
+                    X_modified.loc[:, feature] = baselines[feature]
+
+            new_probs = self._prediction_probabilities(predict_fn, X_modified)
+            new_class_probs = new_probs[np.arange(len(X)), predicted_classes]
+            cumulative_diffs += original_class_probs - new_class_probs
+
+        return float(np.mean(cumulative_diffs) / (K + 1))
+
+    def compare_aopc_methods(
+        self,
+        predict_fn,
+        X,
+        rankings,
+        K_max,
+        reference_data=None,
+        categorical_features=None,
+        random_runs=5,
+        random_state=42,
+    ):
+        """Compare explanation rankings and a shuffled ranking using global AOPC."""
+        rng = np.random.default_rng(random_state)
+        results = {}
+        curves = {}
+
+        for method, ranking in rankings.items():
+            curve = [
+                self.compute_aopc_global(
+                    predict_fn, X, ranking, k, reference_data, categorical_features
+                )
+                for k in range(K_max + 1)
+            ]
+            curves[method] = curve
+            results[method] = curve[-1] if curve else np.nan
+
+        random_curves = []
+        for _ in range(random_runs):
+            random_ranking = list(X.columns)
+            rng.shuffle(random_ranking)
+            random_curves.append([
+                self.compute_aopc_global(
+                    predict_fn, X, random_ranking, k, reference_data, categorical_features
+                )
+                for k in range(K_max + 1)
+            ])
+
+        random_mean = np.nanmean(random_curves, axis=0) if random_curves else []
+        random_std = np.nanstd(random_curves, axis=0) if random_curves else []
+        curves["Random"] = random_mean.tolist() if len(random_mean) else []
+        results["Random"] = random_mean[-1] if len(random_mean) else np.nan
+
+        best_method = max(
+            rankings,
+            key=lambda method: results[method] if not np.isnan(results[method]) else -np.inf,
+        )
+        return {
+            "best_method": best_method,
+            "scores": results,
+            "curves": curves,
+            "random_std": random_std.tolist() if len(random_std) else [],
+        }
 
     def _prepare_plot_data(self, explanations_per_group, group_names, data_per_group=None):
         """

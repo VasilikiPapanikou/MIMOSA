@@ -329,10 +329,10 @@ class ClassifierTrainer:
             if isinstance(x, np.ndarray):
                 x_df = pd.DataFrame(x, columns=X_train.columns)
             else:
-                x_df = x
+                x_df = x.copy()
             
             if model_type == "MLP":
-                x_df['target'] = 0 
+                x_df.loc[:, 'target'] = 0 
                 # Re-use detection logic
                 p_attrs = adversarial_sensitive_attrs if adversarial_sensitive_attrs else self.infer_default_protected_attrs(x_df)
                 

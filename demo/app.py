@@ -7,7 +7,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
 import os
-sys.path.append('../src') 
+
+# Resolve imports from the project regardless of Streamlit's launch directory.
+SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
 from data_loader import DataLoader
 import datetime
 import numpy as np
@@ -539,6 +544,86 @@ def get_cached_explanations(
         save_path=file_name,
         num_features=num_features,
     )
+
+
+def select_best_explanation_method(
+    explainer_obj,
+    model_name,
+    predict_fn,
+    dice_model,
+    X_focus,
+    X_rest,
+    focus_original,
+    rest_original,
+    focus_group_name,
+    rest_group_name,
+    outcome_group,
+    reference_data,
+    categorical_features,
+    run_context,
+):
+    """Generate all individual explanations and select the highest-AOPC ranking."""
+    group_names = [focus_group_name, rest_group_name]
+    data_subsets = {
+        focus_group_name: focus_original,
+        rest_group_name: rest_original,
+    }
+    sampled_subsets = {
+        focus_group_name: X_focus,
+        rest_group_name: X_rest,
+    }
+    explanations_by_method = {}
+
+    for method in ("LIME", "SHAP", "DiCE"):
+        if method == "DiCE":
+            method_subsets = data_subsets
+            focus_explanations = [] if X_focus.empty else get_cached_explanations(
+                explainer_obj, method, model_name, dice_model,
+                method_subsets[focus_group_name], focus_group_name, outcome_group,
+                run_context=run_context
+            )
+            rest_explanations = [] if X_rest.empty else get_cached_explanations(
+                explainer_obj, method, model_name, dice_model,
+                method_subsets[rest_group_name], rest_group_name, outcome_group,
+                run_context=run_context
+            )
+        else:
+            focus_explanations = [] if X_focus.empty else get_cached_explanations(
+                explainer_obj, method, model_name, predict_fn,
+                X_focus, focus_group_name, outcome_group,
+                run_context=run_context
+            )
+            rest_explanations = [] if X_rest.empty else get_cached_explanations(
+                explainer_obj, method, model_name, predict_fn,
+                X_rest, rest_group_name, outcome_group,
+                run_context=run_context
+            )
+        explanations_by_method[method] = {
+            focus_group_name: focus_explanations,
+            rest_group_name: rest_explanations,
+        }
+
+    all_X = pd.concat([X_focus, X_rest], axis=0)
+    rankings = {
+        "LIME": explainer_obj.get_global_feature_order(
+            explanations_by_method["LIME"], group_names, top_n=len(all_X.columns)
+        ),
+        "SHAP": explainer_obj.get_global_feature_order(
+            explanations_by_method["SHAP"], group_names, top_n=len(all_X.columns)
+        ),
+        "DiCE": explainer_obj.get_global_feature_order_dice(
+            explanations_by_method["DiCE"], group_names, data_subsets, top_n=len(all_X.columns)
+        ),
+    }
+    comparison = explainer_obj.compare_aopc_methods(
+        predict_fn,
+        all_X,
+        rankings,
+        K_max=min(10, len(all_X.columns)),
+        reference_data=reference_data,
+        categorical_features=categorical_features,
+    )
+    return comparison
 
 def create_mini_bar_plot(val1, val2, name1, name2):
     
@@ -1179,10 +1264,12 @@ def main():
                     
                     sns.countplot(
                         x='focus_group', 
+                        hue='focus_group',
                         data=plot_df, 
                         palette="pastel", 
                         ax=ax, 
-                        order=group_order_with_names
+                        order=group_order_with_names,
+                        legend=False
                     )
                     
                     ax.set_ylabel("Count", fontsize=8)
@@ -1587,6 +1674,38 @@ def main():
             
             model_name = st.session_state.saved_model_name
 
+            if exp_method == "Best":
+                with st.spinner("Comparing LIME, SHAP, and DiCE with AOPC..."):
+                    aopc_comparison = select_best_explanation_method(
+                        explainer_obj,
+                        model_name,
+                        predict_lime,
+                        dice_model,
+                        X_test_focus_group_sampled,
+                        X_test_rest_group_sampled,
+                        data_df.loc[X_test_focus_group_sampled.index].drop(columns=["focus_group"], errors="ignore"),
+                        data_df.loc[X_test_rest_group_sampled.index].drop(columns=["focus_group"], errors="ignore"),
+                        focus_group_name,
+                        rest_group_name,
+                        outcome_group,
+                        data_encoded[feature_names],
+                        categorical_features,
+                        "base",
+                    )
+                aopc_scores = pd.DataFrame(
+                    {"Method": list(aopc_comparison["scores"].keys()),
+                     "AOPC": list(aopc_comparison["scores"].values())}
+                )
+                st.info(f"Best explanation method according to AOPC: **{aopc_comparison['best_method']}**")
+                st.dataframe(aopc_scores, hide_index=True, use_container_width=True)
+                exp_method = aopc_comparison["best_method"]
+                if exp_method == "LIME":
+                    model_input = predict_lime
+                elif exp_method == "SHAP":
+                    model_input = predict_shap
+                else:
+                    model_input = dice_model
+            
 
             st.markdown("---")
             st.markdown(f"### Generating **{exp_method}** Explanations")
@@ -2508,6 +2627,38 @@ def main():
                     model_input = intervention_results["predict_shap"]
                 elif exp_method == "DiCE":
                     model_input = intervention_results["dice_model"]
+
+                if exp_method == "Best":
+                    with st.spinner("Comparing LIME, SHAP, and DiCE with AOPC..."):
+                        aopc_comparison = select_best_explanation_method(
+                            explainer_obj_int,
+                            model_name,
+                            intervention_results["predict_lime"],
+                            intervention_results["dice_model"],
+                            X_test_focus_group_sampled,
+                            X_test_rest_group_sampled,
+                            data_df.loc[X_test_focus_group_sampled.index].drop(columns=["focus_group"], errors="ignore"),
+                            data_df.loc[X_test_rest_group_sampled.index].drop(columns=["focus_group"], errors="ignore"),
+                            focus_group_name_int,
+                            rest_group_name_int,
+                            outcome_group,
+                            data_encoded_intervene[feature_names_intervene],
+                            categorical_features,
+                            "intervention",
+                        )
+                    aopc_scores = pd.DataFrame(
+                        {"Method": list(aopc_comparison["scores"].keys()),
+                         "AOPC": list(aopc_comparison["scores"].values())}
+                    )
+                    st.info(f"Best explanation method according to AOPC: **{aopc_comparison['best_method']}**")
+                    st.dataframe(aopc_scores, hide_index=True, use_container_width=True)
+                    exp_method = aopc_comparison["best_method"]
+                    if exp_method == "LIME":
+                        model_input = intervention_results["predict_lime"]
+                    elif exp_method == "SHAP":
+                        model_input = intervention_results["predict_shap"]
+                    else:
+                        model_input = intervention_results["dice_model"]
                 
                 st.subheader("Explain")
                 st.write("Diagnose *why* the intervened model produces certain outcomes.")
