@@ -95,12 +95,45 @@ The **MIMOSA**<sup>*</sup> tool utilizes both individual and group explanation m
 ### Prerequisites
 - Python 3.8+
 
+### Clone the repository
+
+```bash
+git clone https://github.com/VasilikiPapanikou/MIMOSA.git
+cd MIMOSA
+```
+
+### Create and activate a virtual environment
+
+```bash
+python -m venv .venv
+```
+
+On Windows:
+
+```bash
+.venv\Scripts\activate
+```
+
+On macOS/Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+Then upgrade pip:
+
+```bash
+python -m pip install --upgrade pip
+```
+
 ### Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Run the app
+
 ```bash
 streamlit run demo/app.py
 ```
