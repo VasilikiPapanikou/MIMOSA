@@ -6,6 +6,9 @@ from folktables import ACSDataSource, ACSIncome
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 import os
 import streamlit as st
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 class MappingEncoder:
     def __init__(self, mapping):
         self.mapping = mapping
@@ -65,8 +68,8 @@ class DataLoader:
    
         """
 
-        dir = '../data/acs_data'
-        file = f'{dir}/{state}_{str(year)}.parquet'
+        acs_dir = os.path.join(PROJECT_ROOT, "data", "acs_data")
+        file = os.path.join(acs_dir, f"{state}_{str(year)}.parquet")
         
         if os.path.exists(file):
             print(f"Loading cached ACS data for {state} from {file}")
@@ -75,7 +78,7 @@ class DataLoader:
             print(f"Dowloading ACS data for {state} ...")
             data_source = ACSDataSource(survey_year=year, horizon='1-Year', survey='person')
             ca_data = data_source.get_data(states=[state], download=True)
-            os.makedirs(dir, exist_ok=True)  
+            os.makedirs(acs_dir, exist_ok=True)  
             ca_data.to_parquet(file)
     
         categorical_indices = [1, 2, 3, 4, 5, 7, 8]

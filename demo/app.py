@@ -27,9 +27,14 @@ import base64
 from explainer import Explainer   
 import importlib
 
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, ".."))
+
 st.set_page_config(layout="wide", page_title="Fairness Dashboard")
 @st.cache_data
 def get_img_as_base64(file):
+    if not os.path.isabs(file):
+        file = os.path.join(APP_DIR, file)
     if not os.path.exists(file):
         return None
     with open(file, "rb") as f:
@@ -271,7 +276,7 @@ def load_dataset(name, state=None, year=None, protected_to_remove=[]):
     try:
         if name == "Adult":
             data_initial, data_df, data_encoded, class_names, feature_names, categorical_features, categorical_indices, categorical_names, label_encoders = data_loader.load_dataset(
-                "../data/",year,protected_to_remove, datasetName="Adult", min_max_scale=True
+                os.path.join(PROJECT_ROOT, "data"),year,protected_to_remove, datasetName="Adult", min_max_scale=True
             )
             target = "Target"
         
@@ -283,7 +288,7 @@ def load_dataset(name, state=None, year=None, protected_to_remove=[]):
         
         elif name == "German Credit":
             data_initial,data_df, data_encoded, class_names, feature_names, categorical_features, categorical_indices, categorical_names, label_encoders = data_loader.load_dataset(
-                "../data/german.data",year,protected_to_remove, datasetName="GermanCredit", min_max_scale=True
+                os.path.join(PROJECT_ROOT, "data", "german.data"),year,protected_to_remove, datasetName="GermanCredit", min_max_scale=True
             )
             target = "Target"
         
@@ -447,7 +452,7 @@ def train_and_predict_model(
     else:
         MODEL_FILENAME = f"{training_model_name}_{dataset_name}_{removal_suffix}{adv_suffix}_best_model.joblib"
         
-    MODEL_DIR = "saved_models"
+    MODEL_DIR = os.path.join(PROJECT_ROOT, "saved_models")
     MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
     PARAM_PATH = MODEL_PATH.replace("_best_model.joblib", "_best_params.joblib")
 
