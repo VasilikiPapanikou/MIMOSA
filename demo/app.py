@@ -449,6 +449,7 @@ def train_and_predict_model(
         
     MODEL_DIR = "saved_models"
     MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
+    PARAM_PATH = MODEL_PATH.replace("_best_model.joblib", "_best_params.joblib")
 
     
     trainer = ClassifierTrainer(
@@ -460,7 +461,10 @@ def train_and_predict_model(
         unprivileged_groups=None, 
         debias=debias,
         adversary_loss_weight=adversary_loss_weight,
-        random_seed=42
+        random_seed=42,
+        model_dir=MODEL_DIR,
+        model_path=MODEL_PATH,
+        param_path=PARAM_PATH
     )
 
     model = None
@@ -525,10 +529,18 @@ def get_cached_explanations(
     def safe_filename_part(value):
         return re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value)).strip("._") or "unknown"
 
+    cache_parts = ["explanations_v3"]
+    if method == "DiCE":
+        cache_parts.append("dice_random_s500")
+        protected_attrs = getattr(_model_input, "protected_attrs", None)
+        if protected_attrs:
+            cache_parts.append("sens_" + "_".join(map(str, protected_attrs)))
+    cache_context = "_".join(cache_parts + [str(run_context)])
+
     file_name = os.path.join(
         explanations_dir,
         "{}_{}_{}_{}_{}_{}_explanations.json".format(
-            safe_filename_part(run_context),
+            safe_filename_part(cache_context),
             safe_filename_part(method),
             safe_filename_part(model_name),
             safe_filename_part(group_name),

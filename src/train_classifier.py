@@ -21,12 +21,23 @@ import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
 
 class DiceModelWrapper:
-    def __init__(self, model, label_encoders=None, model_type="random_forest", session=None, feature_names=None):
+    def __init__(
+        self,
+        model,
+        label_encoders=None,
+        model_type="random_forest",
+        session=None,
+        feature_names=None,
+        protected_attrs=None,
+        scale_params=None,
+    ):
         self.model = model
         self.label_encoders = label_encoders or {}
         self.model_type = model_type  
         self.session = session
         self.feature_names = feature_names  
+        self.protected_attrs = protected_attrs or []
+        self.scale_params = scale_params or {}
 
     def predict_proba(self, x):
         # 1. Prepare DataFrame from input (numpy or df)
@@ -42,16 +53,33 @@ class DiceModelWrapper:
                 try:
                     # Convert to string to match encoder's expected input type
                     x_df[feature] = encoder.transform(x_df[feature].astype(str))
-                except:
-                    pass
+                except Exception as e:
+                    raise ValueError(f"Could not encode categorical feature '{feature}' for DiCE prediction: {e}") from e
+
+        for feature, params in self.scale_params.items():
+            if feature not in x_df.columns:
+                continue
+            raw_min = params["raw_min"]
+            raw_max = params["raw_max"]
+            encoded_min = params["encoded_min"]
+            encoded_max = params["encoded_max"]
+            raw_range = raw_max - raw_min
+            if raw_range == 0:
+                x_df[feature] = encoded_min
+            else:
+                scaled = (pd.to_numeric(x_df[feature], errors="coerce") - raw_min) / raw_range
+                x_df[feature] = encoded_min + scaled * (encoded_max - encoded_min)
 
         # 3. Prediction Logic
         if self.model_type == "MLP":
             # AIF360 / TensorFlow Path
             dummy_labels = np.zeros(len(x_df))
             
-            # Detect protected attributes dynamically for the wrapper
-            protected_attrs = [c for c in x_df.columns if "Sex" in c or "Race" in c]
+            protected_attrs = [attr for attr in self.protected_attrs if attr in x_df.columns]
+            if not protected_attrs:
+                protected_attrs = [c for c in x_df.columns if "Sex" in c or "Race" in c]
+            if not protected_attrs:
+                raise ValueError("MLP predictions for DiCE require the selected sensitive attribute.")
             
             aif_data = BinaryLabelDataset(
                 df=x_df.assign(target=dummy_labels),
@@ -84,7 +112,9 @@ class ClassifierTrainer:
         debias=False,
         adversary_loss_weight=0.0001,
         random_seed=42,
-        model_dir="saved_models"
+        model_dir="saved_models",
+        model_path=None,
+        param_path=None,
     ):
         self.dataset_name = dataset_name
         self.feature_names = feature_names
@@ -96,6 +126,8 @@ class ClassifierTrainer:
         self.adversary_loss_weight = adversary_loss_weight
         self.random_seed = random_seed
         self.model_dir = model_dir
+        self.model_path = model_path
+        self.param_path = param_path
         
         self.model = None
         self.model_type = None
@@ -170,9 +202,30 @@ class ClassifierTrainer:
         self.model_type = model_type
         y = data_df["Target"]
         X = data_encoded.drop(columns=["Target"])
+        scale_params = {}
+        for feature in self.feature_names:
+            if feature in self.categorical_features:
+                continue
+            if feature not in data_df.columns or feature not in data_encoded.columns:
+                continue
+            raw_values = pd.to_numeric(data_df[feature], errors="coerce")
+            encoded_values = pd.to_numeric(data_encoded[feature], errors="coerce")
+            if raw_values.dropna().empty or encoded_values.dropna().empty:
+                continue
+            raw_min = float(raw_values.min())
+            raw_max = float(raw_values.max())
+            encoded_min = float(encoded_values.min())
+            encoded_max = float(encoded_values.max())
+            if not np.isclose(raw_min, encoded_min) or not np.isclose(raw_max, encoded_max):
+                scale_params[feature] = {
+                    "raw_min": raw_min,
+                    "raw_max": raw_max,
+                    "encoded_min": encoded_min,
+                    "encoded_max": encoded_max,
+                }
 
-        model_path = os.path.join(self.model_dir, f"{model_type}_{self.dataset_name}_best_model.joblib")
-        param_path = os.path.join(self.model_dir, f"{model_type}_{self.dataset_name}_best_params.joblib")
+        model_path = self.model_path or os.path.join(self.model_dir, f"{model_type}_{self.dataset_name}_best_model.joblib")
+        param_path = self.param_path or os.path.join(self.model_dir, f"{model_type}_{self.dataset_name}_best_params.joblib")
 
         split_seed = 42 
         X_train, X_test, y_train, y_test = train_test_split(
@@ -277,6 +330,7 @@ class ClassifierTrainer:
         # --- PREDICTIONS ---
         y_pred_train = None 
         
+        mlp_protected_attrs = None
         if model_type == 'MLP':
             # Prediction for AIF360
             test_df = X_test.copy()
@@ -287,6 +341,7 @@ class ClassifierTrainer:
                 protected_attrs = adversarial_sensitive_attrs
             else:
                 protected_attrs = self.infer_default_protected_attrs(X_test)
+            mlp_protected_attrs = protected_attrs
 
             aif_test = BinaryLabelDataset(
                 df=test_df, label_names=['target'],
@@ -354,7 +409,9 @@ class ClassifierTrainer:
             label_encoders=self.label_encoders,
             model_type=self.model_type,
             session=self.session if model_type == 'MLP' else None,
-            feature_names=X_train.columns.tolist()
+            feature_names=X_train.columns.tolist(),
+            protected_attrs=mlp_protected_attrs,
+            scale_params=scale_params
         )
 
         results = {
